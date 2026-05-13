@@ -1,4 +1,3 @@
-using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -8,50 +7,45 @@ using Drift.Engine.Engine;
 
 namespace Drift.Ui.Controls;
 
-// Stereo dBFS bar meter. Reads a LevelMonitor exposed by the audio engine on a
-// 30 Hz UI timer, applies meter ballistics in the UI thread (instant peak
-// attack, exponential RMS smoothing, peak-hold tick that drops after ~600 ms),
-// and renders two bars + a clip LED + voice count in a single Avalonia Control.
+// Stereo level meter: two bars (smoothed RMS + peak line) and a clip LED.
+// Optimized for UI-thread cost: no text, no per-frame allocations, conditional
+// invalidation, static pens/brushes, cheap amplitude mapping, ~20 Hz timer.
 public sealed class LevelMeter : Control
 {
     private const float ClipThreshold = 0.99f;
+    private const long PeakHoldMs = 600;
+    private const long ClipLatchMs = 500;
+    /// <summary>Minimum change in normalized bar position (0..1) before repainting.</summary>
+    private const float RepaintEpsilon = 0.00035f;
 
     public static readonly StyledProperty<LevelMonitor?> SourceProperty =
         AvaloniaProperty.Register<LevelMeter, LevelMonitor?>(nameof(Source));
 
-    private static readonly TimeSpan PeakHoldDuration = TimeSpan.FromMilliseconds(600);
-    private static readonly TimeSpan ClipLatchDuration = TimeSpan.FromMilliseconds(500);
-
     private static readonly ImmutableSolidColorBrush BgBrush = new(Color.FromRgb(0x12, 0x18, 0x22));
     private static readonly ImmutableSolidColorBrush BorderBrush = new(Color.FromRgb(0x2A, 0x33, 0x40));
-    private static readonly ImmutableSolidColorBrush PeakTickBrush = new(Color.FromArgb(0xCC, 0xFF, 0xFF, 0xFF));
+    private static readonly ImmutableSolidColorBrush RmsFillBrush = new(Color.FromRgb(0x30, 0xC0, 0x70));
     private static readonly ImmutableSolidColorBrush ClipOnBrush = new(Color.FromRgb(0xFF, 0x40, 0x50));
     private static readonly ImmutableSolidColorBrush ClipOffBrush = new(Color.FromRgb(0x33, 0x1C, 0x1F));
-    private static readonly ImmutableSolidColorBrush LabelBrush = new(Color.FromRgb(0x6E, 0x78, 0x88));
-    private static readonly ImmutableSolidColorBrush VoiceTextBrush = new(Color.FromRgb(0xC8, 0xD0, 0xDE));
+    private static readonly ImmutableSolidColorBrush PeakTickBrush = new(Color.FromArgb(0xCC, 0xFF, 0xFF, 0xFF));
 
-    private static readonly ImmutableLinearGradientBrush BarBrush = new(
-        new[]
-        {
-            new ImmutableGradientStop(0.00, Color.FromRgb(0x00, 0xC0, 0x60)),
-            new ImmutableGradientStop(0.55, Color.FromRgb(0x6F, 0xE0, 0x4A)),
-            new ImmutableGradientStop(0.80, Color.FromRgb(0xFF, 0xB3, 0x00)),
-            new ImmutableGradientStop(1.00, Color.FromRgb(0xFF, 0x40, 0x40))
-        },
-        startPoint: new RelativePoint(0, 0, RelativeUnit.Relative),
-        endPoint: new RelativePoint(1, 0, RelativeUnit.Relative));
+    private static readonly ImmutablePen BarBorderPen = new(BorderBrush);
+    private static readonly ImmutablePen PeakPen = new(PeakTickBrush, 1.5, lineCap: PenLineCap.Round);
 
-    private int _activeVoices;
-    private DateTime _clipTimeL = DateTime.MinValue;
-    private DateTime _clipTimeR = DateTime.MinValue;
+    private long _clipTickL = -1;
+    private long _clipTickR = -1;
     private float _peakHoldL, _peakHoldR;
-    private DateTime _peakHoldTimeL = DateTime.MinValue;
-    private DateTime _peakHoldTimeR = DateTime.MinValue;
-    private int _polyphony;
+    private long _peakHoldTickL;
+    private long _peakHoldTickR;
 
     private float _rmsL, _rmsR;
 
     private DispatcherTimer? _timer;
+
+    // Last painted display snapshot (updated at end of Render).
+    private bool _havePainted;
+    private double _paintW, _paintH;
+    private float _paintRmsL, _paintRmsR, _paintPeakL, _paintPeakR;
+    private bool _paintClip;
 
     public LevelMonitor? Source
     {
@@ -61,13 +55,13 @@ public sealed class LevelMeter : Control
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        return new Size(220, 38);
+        return new Size(200, 28);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _timer.Tick += OnTick;
         _timer.Start();
     }
@@ -91,26 +85,23 @@ public sealed class LevelMeter : Control
             return;
         }
 
-        // Atomic single-field reads (IEEE 754 32-bit aligned writes are atomic on .NET).
         var pL = src.PeakL;
         var pR = src.PeakR;
         var rL = src.RmsL;
         var rR = src.RmsR;
-        _activeVoices = src.ActiveVoices;
-        _polyphony = src.PolyphonyMax;
 
-        // RMS: max(new, prev * decay) -- instant attack, 150 ms-ish release.
+        // RMS: max(new, prev * decay) -- instant attack, ~150 ms release at 50 Hz.
         _rmsL = Math.Max(rL, _rmsL * 0.78f);
         _rmsR = Math.Max(rR, _rmsR * 0.78f);
 
-        var now = DateTime.UtcNow;
+        var now = Environment.TickCount64;
 
         if (pL > _peakHoldL)
         {
             _peakHoldL = pL;
-            _peakHoldTimeL = now;
+            _peakHoldTickL = now;
         }
-        else if (now - _peakHoldTimeL > PeakHoldDuration)
+        else if (now - _peakHoldTickL > PeakHoldMs)
         {
             _peakHoldL *= 0.85f;
         }
@@ -118,24 +109,67 @@ public sealed class LevelMeter : Control
         if (pR > _peakHoldR)
         {
             _peakHoldR = pR;
-            _peakHoldTimeR = now;
+            _peakHoldTickR = now;
         }
-        else if (now - _peakHoldTimeR > PeakHoldDuration)
+        else if (now - _peakHoldTickR > PeakHoldMs)
         {
             _peakHoldR *= 0.85f;
         }
 
         if (pL >= ClipThreshold)
         {
-            _clipTimeL = now;
+            _clipTickL = now;
         }
 
         if (pR >= ClipThreshold)
         {
-            _clipTimeR = now;
+            _clipTickR = now;
         }
 
-        InvalidateVisual();
+        if (NeedsRepaint())
+        {
+            InvalidateVisual();
+        }
+    }
+
+    private bool NeedsRepaint()
+    {
+        var w = Bounds.Width;
+        var h = Bounds.Height;
+        var nRmsL = AmpToNorm(_rmsL);
+        var nRmsR = AmpToNorm(_rmsR);
+        var nPeakL = AmpToNorm(_peakHoldL);
+        var nPeakR = AmpToNorm(_peakHoldR);
+        var clip = ClipDisplay(Environment.TickCount64);
+
+        if (!_havePainted || w != _paintW || h != _paintH)
+        {
+            return true;
+        }
+
+        if (clip != _paintClip)
+        {
+            return true;
+        }
+
+        if (Differs(nRmsL, _paintRmsL) || Differs(nRmsR, _paintRmsR) ||
+            Differs(nPeakL, _paintPeakL) || Differs(nPeakR, _paintPeakR))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool Differs(float a, float b)
+    {
+        return (a > b ? a - b : b - a) > RepaintEpsilon;
+    }
+
+    private bool ClipDisplay(long nowTicks)
+    {
+        return (_clipTickL >= 0 && nowTicks - _clipTickL < ClipLatchMs) ||
+               (_clipTickR >= 0 && nowTicks - _clipTickR < ClipLatchMs);
     }
 
     public override void Render(DrawingContext ctx)
@@ -143,74 +177,75 @@ public sealed class LevelMeter : Control
         var w = Bounds.Width;
         var h = Bounds.Height;
 
-        const double clipW = 12;
-        const double labelW = 18; // tiny "L" / "R" letters left of bars
+        const double clipW = 10;
         const double gap = 4;
-        var barsX = labelW;
-        var barsW = w - labelW - clipW - gap * 2;
-        double barH = 11;
-        double barLY = 2;
+        const double pad = 2;
+        var barsX = pad;
+        var barsW = Math.Max(4, w - pad - clipW - gap);
+        const double barH = 9;
+        const double barLY = 2;
         var barRY = barLY + barH + 2;
 
         DrawBar(ctx, barsX, barLY, barsW, barH, _rmsL, _peakHoldL);
         DrawBar(ctx, barsX, barRY, barsW, barH, _rmsR, _peakHoldR);
 
-        var typeface = new Typeface("Inter, Segoe UI");
-        ctx.DrawText(MakeText("L", 9, LabelBrush, typeface), new Point(2, barLY - 1));
-        ctx.DrawText(MakeText("R", 9, LabelBrush, typeface), new Point(2, barRY - 1));
+        var now = Environment.TickCount64;
+        var clipping = ClipDisplay(now);
+        var ledRect = new Rect(w - clipW, barLY + 1, clipW - 2, barH * 2 + 2);
+        ctx.DrawRectangle(clipping ? ClipOnBrush : ClipOffBrush, null, ledRect);
 
-        // Clip LED
-        var now = DateTime.UtcNow;
-        var clipping = now - _clipTimeL < ClipLatchDuration || now - _clipTimeR < ClipLatchDuration;
-        var ledRect = new Rect(w - clipW, barLY + 2, clipW - 2, barH * 2 - 2);
-        var ledRound = new RoundedRect(ledRect, 2);
-        ctx.DrawRectangle(clipping ? ClipOnBrush : ClipOffBrush, null, ledRound);
-
-        // Voice count, bottom row
-        var poly = _polyphony > 0 ? _polyphony : 16;
-        var voiceText = MakeText($"VOICES {_activeVoices} / {poly}", 9, VoiceTextBrush, typeface);
-        ctx.DrawText(voiceText, new Point(barsX, barRY + barH + 1));
-
-        // CLIP label below LED
-        var clipText = MakeText("CLIP", 8, clipping ? ClipOnBrush : LabelBrush, typeface);
-        ctx.DrawText(clipText, new Point(w - clipW - 2 + (clipW - clipText.Width) / 2, barRY + barH + 2));
+        _paintW = w;
+        _paintH = h;
+        _paintRmsL = AmpToNorm(_rmsL);
+        _paintRmsR = AmpToNorm(_rmsR);
+        _paintPeakL = AmpToNorm(_peakHoldL);
+        _paintPeakR = AmpToNorm(_peakHoldR);
+        _paintClip = clipping;
+        _havePainted = true;
     }
 
     private static void DrawBar(DrawingContext ctx, double x, double y, double w, double h, float rms, float peak)
     {
         var rect = new Rect(x, y, w, h);
-        var rounded = new RoundedRect(rect, 2);
-        ctx.DrawRectangle(BgBrush, new ImmutablePen(BorderBrush), rounded);
+        ctx.DrawRectangle(BgBrush, BarBorderPen, rect);
 
-        var rmsW = AmpToNorm(rms) * (w - 2);
+        var innerW = w - 2;
+        if (innerW <= 0)
+        {
+            return;
+        }
+
+        var rmsW = AmpToNorm(rms) * innerW;
         if (rmsW > 0.5)
         {
-            var fillRect = new Rect(x + 1, y + 1, rmsW, h - 2);
-            ctx.DrawRectangle(BarBrush, null, new RoundedRect(fillRect, 1));
+            var fillRect = new Rect(x + 1, y + 1, Math.Min(rmsW, innerW), h - 2);
+            ctx.DrawRectangle(RmsFillBrush, null, fillRect);
         }
 
-        var peakX = AmpToNorm(peak) * (w - 2);
+        var peakX = AmpToNorm(peak) * innerW;
         if (peakX > 0.5)
         {
-            var tickX = x + 1 + Math.Min(peakX, w - 2);
-            ctx.DrawLine(new ImmutablePen(PeakTickBrush, 1.5), new Point(tickX, y + 1), new Point(tickX, y + h - 1));
+            var tickX = x + 1 + Math.Min(peakX, innerW);
+            ctx.DrawLine(PeakPen, new Point(tickX, y + 1), new Point(tickX, y + h - 1));
         }
     }
 
-    // -60 dBFS -> 0, 0 dBFS -> 1.
-    private static double AmpToNorm(float amp)
+    // Cheap mapping similar to dB-ish spread: quiet sources get more bar resolution than linear.
+    private static float AmpToNorm(float amp)
     {
-        if (amp <= 0.001f)
+        if (amp <= 0f)
         {
-            return 0;
+            return 0f;
         }
 
-        var db = 20 * MathF.Log10(amp);
-        return Math.Clamp((db + 60) / 60.0, 0, 1);
-    }
+        const double lo = 0.03162277660168379; // sqrt(0.001) ~ -60 dBFS ref amplitude
+        var s = Math.Sqrt(amp);
+        if (s <= lo)
+        {
+            return 0f;
+        }
 
-    private static FormattedText MakeText(string s, double size, IBrush brush, Typeface tf)
-    {
-        return new FormattedText(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, size, brush);
+        var n = (float)((s - lo) / (1.0 - lo));
+        return n > 1f ? 1f : n;
     }
 }

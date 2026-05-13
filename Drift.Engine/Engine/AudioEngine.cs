@@ -1,3 +1,4 @@
+using Drift.Engine.Dsp.Lut;
 using Drift.Engine.Midi;
 using Drift.Engine.Synth;
 using NAudio.Wave;
@@ -16,6 +17,11 @@ public sealed class AudioEngine : IDisposable
 
     public AudioEngine()
     {
+        FastExp2.Exp2(0);
+        FastSin.SinFromPhase01(0);
+        FastTanU.Tan(0);
+        FastTanh.Tanh(0);
+        
         Midi = new MidiInputManager(MidiQueue);
     }
 

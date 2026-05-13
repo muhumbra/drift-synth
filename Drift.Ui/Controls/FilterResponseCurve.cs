@@ -25,6 +25,7 @@ public sealed class FilterResponseCurve : Control
     private static readonly ImmutableSolidColorBrush BgBrush = new(Color.FromRgb(0x0F, 0x14, 0x1B));
     private static readonly ImmutableSolidColorBrush GridBrush = new(Color.FromRgb(0x22, 0x2B, 0x36));
     private static readonly ImmutableSolidColorBrush GridLabelBrush = new(Color.FromRgb(0x4A, 0x52, 0x60));
+    private static readonly ImmutablePen GridPen = new(GridBrush, 1);
 
     private const double FreqMin = 20.0;
     private const double FreqMax = 18000.0;
@@ -87,7 +88,6 @@ public sealed class FilterResponseCurve : Control
         ctx.DrawRectangle(BgBrush, null, new Rect(0, 0, w, h), 3, 3);
 
         // Grid: vertical lines at decade marks (100, 1k, 10k); horizontal at 0 dB.
-        var gridPen = new ImmutablePen(GridBrush, 1);
         var pad = 4.0;
         var innerW = w - pad * 2;
         var innerH = h - pad * 2;
@@ -111,11 +111,11 @@ public sealed class FilterResponseCurve : Control
         foreach (var f in (double[])[100, 1000, 10000])
         {
             var x = FreqToX(f);
-            ctx.DrawLine(gridPen, new Point(x, pad), new Point(x, pad + innerH));
+            ctx.DrawLine(GridPen, new Point(x, pad), new Point(x, pad + innerH));
         }
 
         var y0 = DbToY(0);
-        ctx.DrawLine(gridPen, new Point(pad, y0), new Point(pad + innerW, y0));
+        ctx.DrawLine(GridPen, new Point(pad, y0), new Point(pad + innerW, y0));
 
         var src = Source;
         if (src is null)

@@ -1,4 +1,5 @@
 using Drift.Engine.Dsp;
+using Drift.Engine.Dsp.Lut;
 using Drift.Engine.Sequencer;
 
 namespace Drift.Engine.Synth;
@@ -52,7 +53,7 @@ public sealed class OscParams : Observable
     public float FrequencyMultiplier()
     {
         var semis = _octave * 12f + _semitone + _fineCents / 100f;
-        return MathF.Pow(2f, semis / 12f);
+        return FastExp2.Exp2(semis / 12f);
     }
 
     public void CopyFrom(OscParams s)

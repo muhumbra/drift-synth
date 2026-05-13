@@ -1,4 +1,5 @@
 using Drift.Engine.Dsp;
+using Drift.Engine.Dsp.Lut;
 
 namespace Drift.Engine.Synth;
 
@@ -143,6 +144,9 @@ public sealed class SynthVoice : ISynthVoice
         var cutoff = filt.Cutoff;
         var res = filt.Resonance;
         var envAmt = filt.EnvAmount;
+        
+        var m1 = osc1P.FrequencyMultiplier();
+        var m2 = osc2P.FrequencyMultiplier();
 
         for (var i = 0; i < count; i++)
         {
@@ -156,11 +160,11 @@ public sealed class SynthVoice : ISynthVoice
             var pitchMod = 1f;
             if (lfoToPitch)
             {
-                pitchMod = MathF.Pow(2f, lfoV * effectiveLfoAmt / 12f);
+                pitchMod = FastExp2.Exp2(lfoV * effectiveLfoAmt / 12f);
             }
 
-            var f1 = freq * osc1P.FrequencyMultiplier() * pitchMod;
-            var f2 = freq * osc2P.FrequencyMultiplier() * pitchMod;
+            var f1 = freq * m1 * pitchMod;
+            var f2 = freq * m2 * pitchMod;
             var fSub = freq * 0.5f * pitchMod;
 
             _osc1.Frequency = f1;
@@ -172,10 +176,10 @@ public sealed class SynthVoice : ISynthVoice
                       + _sub.Render() * levelSub
                       + _noise.Render() * levelNz;
 
-            var cMod = cutoff * keyTrackMul * MathF.Pow(2f, envAmt * fEnv * 5f);
+            var cMod = cutoff * keyTrackMul * FastExp2.Exp2( envAmt * fEnv * 5f);
             if (lfoToCutoff)
             {
-                cMod *= MathF.Pow(2f, lfoV * effectiveLfoAmt * 4f);
+                cMod *= FastExp2.Exp2( lfoV * effectiveLfoAmt * 4f);
             }
 
             _filter.Set(cMod, res);

@@ -79,6 +79,23 @@ public sealed class Knob : Control
     public static readonly StyledProperty<string?> ParamIdProperty =
         AvaloniaProperty.Register<Knob, string?>(nameof(ParamId));
 
+    private static readonly ImmutableSolidColorBrush KnobOuterFillBrush =
+        new(Color.FromRgb(0x0F, 0x14, 0x1B));
+    private static readonly ImmutableSolidColorBrush KnobRimBrush =
+        new(Color.FromRgb(0x3D, 0x4A, 0x5C));
+    private static readonly ImmutablePen KnobRimPen = new(KnobRimBrush);
+    private static readonly ImmutableSolidColorBrush KnobTrackBrush =
+        new(Color.FromRgb(0x22, 0x2B, 0x36));
+    private static readonly ImmutablePen KnobTrackPen =
+        new(KnobTrackBrush, 4, lineCap: PenLineCap.Round);
+    private static readonly RadialGradientBrush KnobBodyRadialBrush = CreateKnobBodyRadialBrush();
+    private static readonly ImmutableSolidColorBrush KnobDefaultAccentBrush =
+        new(Color.FromRgb(0x00, 0xD4, 0xFF));
+    private static readonly Typeface CaptionTypeface = new("Inter, Segoe UI");
+    private static readonly Typeface ValueTypeface = new("Cascadia Mono, Consolas, Courier New");
+    private static readonly ImmutableSolidColorBrush CaptionMutedBrush =
+        new(Color.FromRgb(0x7B, 0x85, 0x95));
+
     private bool _dragging;
     private Point _dragOriginPoint;
     private double _dragOriginValue;
@@ -88,6 +105,24 @@ public sealed class Knob : Control
     {
         AffectsRender<Knob>(ValueProperty, MinimumProperty, MaximumProperty, CaptionProperty, UnitsProperty,
             AccentProperty, BipolarProperty);
+    }
+
+    private static RadialGradientBrush CreateKnobBodyRadialBrush()
+    {
+        var bodyHi = Color.FromRgb(0x2A, 0x33, 0x40);
+        var bodyLo = Color.FromRgb(0x10, 0x14, 0x1B);
+        return new RadialGradientBrush
+        {
+            Center = new RelativePoint(0.4, 0.3, RelativeUnit.Relative),
+            GradientOrigin = new RelativePoint(0.4, 0.3, RelativeUnit.Relative),
+            RadiusX = new RelativeScalar(0.7, RelativeUnit.Relative),
+            RadiusY = new RelativeScalar(0.7, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(bodyHi, 0),
+                new GradientStop(bodyLo, 1)
+            }
+        };
     }
 
     public Knob()
@@ -300,23 +335,14 @@ public sealed class Knob : Control
         var rTrack = rOuter - 2;
         var rBody = rOuter - 7;
 
-        var accent = Accent as ISolidColorBrush ?? new ImmutableSolidColorBrush(Color.FromRgb(0x00, 0xD4, 0xFF));
+        var accent = Accent as ISolidColorBrush ?? KnobDefaultAccentBrush;
         var accentColor = accent.Color;
-        var accentDim = Color.FromArgb(60, accentColor.R, accentColor.G, accentColor.B);
-
-        var bgColor = Color.FromRgb(0x0F, 0x14, 0x1B);
-        var trackColor = Color.FromRgb(0x22, 0x2B, 0x36);
-        var rimColor = Color.FromRgb(0x3D, 0x4A, 0x5C);
-        var bodyHi = Color.FromRgb(0x2A, 0x33, 0x40);
-        var bodyLo = Color.FromRgb(0x10, 0x14, 0x1B);
 
         // outer rim
-        ctx.DrawEllipse(new ImmutableSolidColorBrush(bgColor), new ImmutablePen(new ImmutableSolidColorBrush(rimColor)),
-            new Point(cx, cy), rOuter, rOuter);
+        ctx.DrawEllipse(KnobOuterFillBrush, KnobRimPen, new Point(cx, cy), rOuter, rOuter);
 
         // track arc (full sweep, dim)
-        var trackPen = new ImmutablePen(new ImmutableSolidColorBrush(trackColor), 4, lineCap: PenLineCap.Round);
-        ctx.DrawGeometry(null, trackPen, BuildArc(new Point(cx, cy), rTrack, StartAngleDeg, SweepDeg));
+        ctx.DrawGeometry(null, KnobTrackPen, BuildArc(new Point(cx, cy), rTrack, StartAngleDeg, SweepDeg));
 
         // value arc
         var normalisedValue = NormaliseToUnit(Value);
@@ -345,20 +371,7 @@ public sealed class Knob : Control
         }
 
         // body (radial gradient for faux highlight)
-        var body = new RadialGradientBrush
-        {
-            Center = new RelativePoint(0.4, 0.3, RelativeUnit.Relative),
-            GradientOrigin = new RelativePoint(0.4, 0.3, RelativeUnit.Relative),
-            RadiusX = new RelativeScalar(0.7, RelativeUnit.Relative),
-            RadiusY = new RelativeScalar(0.7, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(bodyHi, 0),
-                new GradientStop(bodyLo, 1)
-            }
-        };
-        ctx.DrawEllipse(body, new ImmutablePen(new ImmutableSolidColorBrush(rimColor)),
-            new Point(cx, cy), rBody, rBody);
+        ctx.DrawEllipse(KnobBodyRadialBrush, KnobRimPen, new Point(cx, cy), rBody, rBody);
 
         // indicator notch
         var angle = (StartAngleDeg + normalisedValue * SweepDeg) * Math.PI / 180.0;
@@ -377,9 +390,9 @@ public sealed class Knob : Control
             (Caption ?? "").ToUpperInvariant(),
             CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight,
-            new Typeface("Inter, Segoe UI"),
+            CaptionTypeface,
             9,
-            new ImmutableSolidColorBrush(Color.FromRgb(0x7B, 0x85, 0x95)));
+            CaptionMutedBrush);
         ctx.DrawText(captionFt, new Point((w - captionFt.Width) / 2, 1));
 
         // value text below
@@ -388,7 +401,7 @@ public sealed class Knob : Control
             valueText,
             CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight,
-            new Typeface("Cascadia Mono, Consolas, Courier New"),
+            ValueTypeface,
             10,
             new ImmutableSolidColorBrush(accentColor));
         ctx.DrawText(valueFt, new Point((w - valueFt.Width) / 2, h - 14));

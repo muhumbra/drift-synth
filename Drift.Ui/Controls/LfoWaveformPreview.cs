@@ -24,6 +24,10 @@ public sealed class LfoWaveformPreview : Control
     private static readonly ImmutableSolidColorBrush BgBrush = new(Color.FromRgb(0x0F, 0x14, 0x1B));
     private static readonly ImmutableSolidColorBrush GridBrush = new(Color.FromRgb(0x22, 0x2B, 0x36));
     private static readonly ImmutableSolidColorBrush CursorBrush = new(Color.FromArgb(0xB0, 0xFF, 0xFF, 0xFF));
+    private static readonly double[] MidLineDashPattern = [2, 3];
+    private static readonly ImmutableDashStyle MidLineDashStyle = new(MidLineDashPattern, 0);
+    private static readonly ImmutablePen MidLineGridPen = new(GridBrush, 1, MidLineDashStyle);
+    private static readonly ImmutablePen CursorLinePen = new(CursorBrush, 1);
 
     private DispatcherTimer? _timer;
     private double _phase;
@@ -146,8 +150,7 @@ public sealed class LfoWaveformPreview : Control
 
         // Centre line.
         var midY = h / 2.0;
-        ctx.DrawLine(new ImmutablePen(GridBrush, 1, new ImmutableDashStyle([2, 3], 0)),
-            new Point(0, midY), new Point(w, midY));
+        ctx.DrawLine(MidLineGridPen, new Point(0, midY), new Point(w, midY));
 
         var src = Source;
         if (src is null)
@@ -200,8 +203,7 @@ public sealed class LfoWaveformPreview : Control
         if (amount > 0.001f)
         {
             var cursorX = pad + _phase * (innerW / cycles);
-            ctx.DrawLine(new ImmutablePen(CursorBrush, 1),
-                new Point(cursorX, pad), new Point(cursorX, h - pad));
+            ctx.DrawLine(CursorLinePen, new Point(cursorX, pad), new Point(cursorX, h - pad));
 
             var cursorV = SampleShape(shape, _phase, _phase);
             var cursorY = midY - cursorV * halfH;

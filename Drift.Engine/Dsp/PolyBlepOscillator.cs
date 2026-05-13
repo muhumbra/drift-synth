@@ -1,3 +1,5 @@
+using Drift.Engine.Dsp.Lut;
+
 namespace Drift.Engine.Dsp;
 
 // Anti-aliased oscillator using PolyBLEP (Polynomial Bandlimited Step) corrections.
@@ -44,7 +46,7 @@ public sealed class PolyBlepOscillator
     {
         var v = Wave switch
         {
-            Waveform.Sine => MathF.Sin(_phase * MathF.Tau),
+            Waveform.Sine => FastSin.SinFromTurns(_phase),
             Waveform.Triangle => RenderTriangle(),
             Waveform.Saw => RenderSaw(),
             Waveform.Square => RenderSquare(),

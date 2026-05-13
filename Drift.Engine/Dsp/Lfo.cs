@@ -1,3 +1,5 @@
+using Drift.Engine.Dsp.Lut;
+
 namespace Drift.Engine.Dsp;
 
 public enum LfoShape
@@ -45,7 +47,7 @@ public sealed class Lfo
     {
         var v = Shape switch
         {
-            LfoShape.Sine => MathF.Sin(_phase * MathF.Tau),
+            LfoShape.Sine => FastSin.SinFromTurns(_phase),
             LfoShape.Triangle => _phase < 0.5f ? -1f + 4f * _phase : 3f - 4f * _phase,
             LfoShape.Saw => 2f * _phase - 1f,
             LfoShape.Square => _phase < 0.5f ? 1f : -1f,

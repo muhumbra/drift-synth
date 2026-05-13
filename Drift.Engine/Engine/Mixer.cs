@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Drift.Engine.Dsp.Lut;
 using Drift.Engine.Effects;
 using Drift.Engine.Midi;
 using Drift.Engine.Sequencer;
@@ -240,6 +241,6 @@ public sealed class Mixer : ISampleProvider
 
     private static float SoftClip(float x)
     {
-        return MathF.Tanh(x * 0.9f);
+        return FastTanh.Tanh(x * 0.9f);
     }
 }

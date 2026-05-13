@@ -9,7 +9,7 @@ using Drift.Engine.Midi;
 namespace Drift.Ui.Controls;
 
 // Four activity LEDs (note / other CC / pitch bend / mod wheel CC1) driven by
-// MidiInputManager tick timestamps. UI-thread timer ~30 Hz; matches LevelMeter pattern.
+// MidiInputManager tick timestamps. UI-thread timer ~30 Hz.
 public sealed class MidiActivityDots : Control
 {
     public static readonly StyledProperty<MidiInputManager?> SourceProperty =
@@ -25,6 +25,8 @@ public sealed class MidiActivityDots : Control
     private static readonly Color CcColor = Color.FromRgb(0xB9, 0x87, 0xFF);
     private static readonly Color BendColor = Color.FromRgb(0x00, 0xD4, 0xFF);
     private static readonly Color ModColor = Color.FromRgb(0xFF, 0x2D, 0x95);
+
+    private static readonly Typeface LabelTypeface = new("Inter, Segoe UI");
 
     private DispatcherTimer? _timer;
 
@@ -118,12 +120,10 @@ public sealed class MidiActivityDots : Control
         var colW = w / 4.0;
         const double dotR = 5.0;
         var dotY = 4.0;
-        var typeface = new Typeface("Inter, Segoe UI");
-
-        DrawCell(ctx, 0 * colW, colW, dotY, dotR, "N", NoteColor, _nLevel, typeface);
-        DrawCell(ctx, 1 * colW, colW, dotY, dotR, "CC", CcColor, _ccLevel, typeface);
-        DrawCell(ctx, 2 * colW, colW, dotY, dotR, "BND", BendColor, _bendLevel, typeface);
-        DrawCell(ctx, 3 * colW, colW, dotY, dotR, "MOD", ModColor, _modLevel, typeface);
+        DrawCell(ctx, 0 * colW, colW, dotY, dotR, "N", NoteColor, _nLevel, LabelTypeface);
+        DrawCell(ctx, 1 * colW, colW, dotY, dotR, "CC", CcColor, _ccLevel, LabelTypeface);
+        DrawCell(ctx, 2 * colW, colW, dotY, dotR, "BND", BendColor, _bendLevel, LabelTypeface);
+        DrawCell(ctx, 3 * colW, colW, dotY, dotR, "MOD", ModColor, _modLevel, LabelTypeface);
     }
 
     private static void DrawCell(

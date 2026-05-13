@@ -24,6 +24,7 @@ public sealed class EnvelopeCurve : Control
 
     private static readonly ImmutableSolidColorBrush GridBrush = new(Color.FromRgb(0x22, 0x2B, 0x36));
     private static readonly ImmutableSolidColorBrush BgBrush = new(Color.FromRgb(0x0F, 0x14, 0x1B));
+    private static readonly ImmutablePen BaselinePen = new(GridBrush, 1);
 
     static EnvelopeCurve()
     {
@@ -81,8 +82,7 @@ public sealed class EnvelopeCurve : Control
         ctx.DrawRectangle(BgBrush, null, new Rect(0, 0, w, h), 3, 3);
 
         // Faint baseline + sustain reference line.
-        var baselinePen = new ImmutablePen(GridBrush, 1);
-        ctx.DrawLine(baselinePen, new Point(0, h - 0.5), new Point(w, h - 0.5));
+        ctx.DrawLine(BaselinePen, new Point(0, h - 0.5), new Point(w, h - 0.5));
 
         var src = Source;
         if (src is null)

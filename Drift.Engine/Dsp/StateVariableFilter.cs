@@ -1,3 +1,5 @@
+using Drift.Engine.Dsp.Lut;
+
 namespace Drift.Engine.Dsp;
 
 // Cytomic / Andy Simper "Linear Trapezoidal SVF" -- a TPT state-variable filter that
@@ -38,7 +40,7 @@ public sealed class StateVariableFilter
     {
         var cutoff = Math.Clamp(_cutoff, 20f, _sampleRate * 0.49f);
         var res = Math.Clamp(_resonance, 0f, 1f);
-        _g = MathF.Tan(MathF.PI * cutoff / _sampleRate);
+        _g = FastTanU.TanPiFcOverFs(cutoff, _sampleRate);
         _k = 2f - 1.99f * res;
         _a1 = 1f / (1f + _g * (_g + _k));
         _a2 = _g * _a1;
