@@ -1,0 +1,59 @@
+## Build
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.pidb
+*.svclog
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.VC.VC.opendb
+
+## Publish / pack
+publish/
+artifacts/
+*.nupkg
+*.snupkg
+
+## Test / coverage
+TestResults/
+[Tt]emp/
+*.coverage
+*.coveragexml
+
+## IDE — Visual Studio
+.vs/
+*.rsuser
+
+## IDE — Rider
+.idea/
+*.sln.iml
+
+## IDE — VS Code (local only unless you choose to commit shared tasks)
+.vscode/
+
+## Cursor (local AI rules — not published)
+.cursor/
+
+## OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Local / personal (notes, scratch, env — never commit)
+.private/
+
+## .NET 10+ optional XML solution (we standardize on Drift.sln)
+*.slnx
+
+## NuGet
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json

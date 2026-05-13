@@ -1,0 +1,56 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Fill in as much detail as you can.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: "When I do X, the app does Y instead of Z."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably trigger the bug.
+      placeholder: |
+        1. Open patch "..."
+        2. Enable arpeggiator
+        3. Press a key — audio drops out
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Windows version
+      placeholder: "e.g. Windows 11 24H2"
+    validations:
+      required: true
+
+  - type: input
+    id: asio
+    attributes:
+      label: ASIO driver and buffer size
+      placeholder: "e.g. ASIO4ALL v2, 256 samples @ 48 kHz"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Crash logs, screenshots, patch files, etc.

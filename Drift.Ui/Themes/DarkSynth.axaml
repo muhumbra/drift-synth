@@ -1,0 +1,236 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+        <ResourceDictionary>
+            <Color x:Key="DriftBg">#0B0E13</Color>
+            <Color x:Key="DriftBgHi">#11151C</Color>
+            <Color x:Key="DriftPanel">#1A1F28</Color>
+            <Color x:Key="DriftPanelHi">#222B36</Color>
+            <Color x:Key="DriftBorder">#2D3744</Color>
+            <Color x:Key="DriftBorderHi">#3D4A5C</Color>
+            <Color x:Key="DriftTrack">#0F141B</Color>
+            <Color x:Key="DriftAccent">#00D4FF</Color>
+            <Color x:Key="DriftAccentDim">#1A6E85</Color>
+            <Color x:Key="DriftAmber">#FF9A3C</Color>
+            <Color x:Key="DriftMagenta">#FF2D95</Color>
+            <Color x:Key="DriftGreen">#37E08C</Color>
+            <Color x:Key="DriftViolet">#B987FF</Color>
+            <Color x:Key="DriftRed">#FF4757</Color>
+            <Color x:Key="DriftText">#E8ECF1</Color>
+            <Color x:Key="DriftTextDim">#7B8595</Color>
+            <Color x:Key="DriftTextFaint">#4A5260</Color>
+
+            <SolidColorBrush x:Key="DriftBgBrush" Color="{StaticResource DriftBg}" />
+            <SolidColorBrush x:Key="DriftBgHiBrush" Color="{StaticResource DriftBgHi}" />
+            <SolidColorBrush x:Key="DriftPanelBrush" Color="{StaticResource DriftPanel}" />
+            <SolidColorBrush x:Key="DriftPanelHiBrush" Color="{StaticResource DriftPanelHi}" />
+            <SolidColorBrush x:Key="DriftBorderBrush" Color="{StaticResource DriftBorder}" />
+            <SolidColorBrush x:Key="DriftBorderHiBrush" Color="{StaticResource DriftBorderHi}" />
+            <SolidColorBrush x:Key="DriftTrackBrush" Color="{StaticResource DriftTrack}" />
+            <SolidColorBrush x:Key="DriftAccentBrush" Color="{StaticResource DriftAccent}" />
+            <SolidColorBrush x:Key="DriftAccentDimBrush" Color="{StaticResource DriftAccentDim}" />
+            <SolidColorBrush x:Key="DriftAmberBrush" Color="{StaticResource DriftAmber}" />
+            <SolidColorBrush x:Key="DriftMagentaBrush" Color="{StaticResource DriftMagenta}" />
+            <SolidColorBrush x:Key="DriftGreenBrush" Color="{StaticResource DriftGreen}" />
+            <SolidColorBrush x:Key="DriftVioletBrush" Color="{StaticResource DriftViolet}" />
+            <SolidColorBrush x:Key="DriftRedBrush" Color="{StaticResource DriftRed}" />
+            <SolidColorBrush x:Key="DriftTextBrush" Color="{StaticResource DriftText}" />
+            <SolidColorBrush x:Key="DriftTextDimBrush" Color="{StaticResource DriftTextDim}" />
+            <SolidColorBrush x:Key="DriftTextFaintBrush" Color="{StaticResource DriftTextFaint}" />
+
+            <LinearGradientBrush x:Key="DriftPanelGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#222B36" />
+                <GradientStop Offset="1" Color="#161B23" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="DriftHeaderGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0" Color="#0B0E13" />
+                <GradientStop Offset="0.5" Color="#11151C" />
+                <GradientStop Offset="1" Color="#0B0E13" />
+            </LinearGradientBrush>
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource DriftBgBrush}" />
+        <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.label">
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextDimBrush}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="LetterSpacing" Value="2" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.title">
+        <Setter Property="Foreground" Value="{DynamicResource DriftAccentBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LetterSpacing" Value="3" />
+    </Style>
+
+    <Style Selector="TextBlock.brand">
+        <Setter Property="Foreground" Value="{DynamicResource DriftAccentBrush}" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="LetterSpacing" Value="6" />
+    </Style>
+
+    <Style Selector="TextBlock.value">
+        <Setter Property="Foreground" Value="{DynamicResource DriftAccentBrush}" />
+        <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, monospace" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.panel">
+        <Setter Property="Background" Value="{DynamicResource DriftPanelGradient}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="14,10,14,12" />
+        <Setter Property="BoxShadow" Value="0 1 0 0 #1A4A5260, inset 0 1 0 0 #1AFFFFFF" />
+    </Style>
+
+    <Style Selector="Border.topbar">
+        <Setter Property="Background" Value="{DynamicResource DriftHeaderGradient}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="20,10" />
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{DynamicResource DriftBgHiBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Padding" Value="8,3" />
+    </Style>
+
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftAccentBrush}" />
+    </Style>
+
+    <!-- Closed field + in-template text: Fluent default size/family otherwise wins over ComboBox.FontSize. -->
+    <Style Selector="ComboBox TextBlock">
+        <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+
+    <!-- Popup list is separate chrome; items must be styled explicitly. -->
+    <Style Selector="ComboBoxItem">
+        <Setter Property="FontFamily" Value="Inter, Segoe UI, sans-serif" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="10,5" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DriftPanelHiBrush}" />
+    </Style>
+
+    <Style Selector="ComboBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource DriftAccentDimBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+    </Style>
+
+    <Style Selector="ComboBox ListBox">
+        <Setter Property="Background" Value="{DynamicResource DriftBgHiBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{DynamicResource DriftBgHiBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderHiBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Padding" Value="14,5" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DriftPanelHiBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftAccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{DynamicResource DriftAccentDimBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftBgBrush}" />
+    </Style>
+
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DriftAccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.danger">
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftRedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftRedBrush}" />
+    </Style>
+
+    <Style Selector="ToggleButton">
+        <Setter Property="Background" Value="{DynamicResource DriftBgHiBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftBorderHiBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextDimBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="ToggleButton:checked">
+        <Setter Property="Background" Value="{DynamicResource DriftAccentDimBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextBrush}" />
+    </Style>
+
+    <Style Selector="ToggleButton:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DriftAccentDimBrush}" />
+    </Style>
+
+    <!-- ARP ON: section-header sized toggle, glows when active. -->
+    <Style Selector="ToggleButton.arp-on">
+        <Setter Property="MinWidth" Value="76" />
+        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LetterSpacing" Value="3" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="Foreground" Value="{DynamicResource DriftTextDimBrush}" />
+    </Style>
+
+    <Style Selector="ToggleButton.arp-on:checked">
+        <Setter Property="Foreground" Value="{DynamicResource DriftMagentaBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DriftMagentaBrush}" />
+        <Setter Property="Background" Value="#33FF2D95" />
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="#FF2D95" BlurRadius="20" OffsetX="0" OffsetY="0" Opacity="0.7" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style Selector="ToggleButton.arp-on:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="#33FF2D95" />
+    </Style>
+</Styles>

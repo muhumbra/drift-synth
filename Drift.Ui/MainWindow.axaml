@@ -1,0 +1,621 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:c="using:Drift.Ui.Controls"
+        xmlns:vm="using:Drift.Ui.ViewModels"
+        xmlns:patches="using:Drift.Engine.Patches"
+        mc:Ignorable="d" d:DesignWidth="1480" d:DesignHeight="840"
+        x:Class="Drift.Ui.MainWindow"
+        x:DataType="vm:MainViewModel"
+        x:CompileBindings="True"
+        Title="Drift"
+        Icon="avares://Drift.Ui/Assets/icon.png"
+        Width="1480" Height="840"
+        MinWidth="1280" MinHeight="780"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource DriftBgBrush}">
+
+    <Grid>
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+
+        <!-- top transport bar -->
+        <Border Grid.Row="0" Classes="topbar">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Fill="{DynamicResource DriftAccentBrush}">
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#00D4FF" BlurRadius="14" Opacity="0.9" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <TextBlock Classes="brand" Text="DRIFT" VerticalAlignment="Center" />
+                    <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="11"
+                               VerticalAlignment="Center" Text="// polyphonic soft synth" />
+                </StackPanel>
+
+                <c:LevelMeter Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"
+                              Source="{CompiledBinding Levels}" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="18,0,0,0"
+                            VerticalAlignment="Center">
+                    <TextBlock Classes="label" Text="VOL" VerticalAlignment="Center" />
+                    <Slider Width="120" Minimum="0" Maximum="1"
+                            VerticalAlignment="Center"
+                            Value="{CompiledBinding Patch.Master.Volume}"
+                            ToolTip.Tip="Master output volume" />
+                    <TextBlock Classes="value" VerticalAlignment="Center" MinWidth="32"
+                               Text="{CompiledBinding Patch.Master.Volume, StringFormat={}{0:0.00}}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Classes="label" Text="ASIO" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox MinWidth="200"
+                              ItemsSource="{CompiledBinding AsioDrivers}"
+                              SelectedItem="{CompiledBinding SelectedDriver}" />
+                    <Button Content="SETTINGS" Click="OnAsioSettingsClick" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" Margin="14,0,0,0"
+                            VerticalAlignment="Center">
+                    <TextBlock Classes="label" Text="MIDI" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox MinWidth="200"
+                              ItemsSource="{CompiledBinding MidiInputs}"
+                              SelectedItem="{CompiledBinding SelectedMidi}" />
+                    <c:MidiActivityDots Margin="6,0,0,0" VerticalAlignment="Center"
+                                        Source="{CompiledBinding Midi}"
+                                        ToolTip.Tip="MIDI activity: N = notes · CC = controllers (not CC1) · BND = pitch bend · MOD = mod wheel (CC1)" />
+                </StackPanel>
+
+                <Border Grid.Column="6" Width="1" Margin="14,8,0,8"
+                        Background="{DynamicResource DriftBorderBrush}" />
+
+                <Border Grid.Column="7" Margin="14,0,0,0" Padding="10,4"
+                        Background="{DynamicResource DriftBgBrush}"
+                        BorderBrush="{DynamicResource DriftBorderBrush}"
+                        BorderThickness="1" CornerRadius="3">
+                    <TextBlock Classes="value" Text="{CompiledBinding LatencyText}" />
+                </Border>
+
+                <Button Grid.Column="8" Margin="14,0,0,0" Classes="primary"
+                        Content="{CompiledBinding PlayLabel}" Click="OnPlayClick" MinWidth="120" />
+
+                <Button Grid.Column="9" Margin="6,0,0,0" Classes="danger"
+                        Content="PANIC" Click="OnPanicClick" />
+
+                <ToggleButton Grid.Column="10" Margin="8,0,0,0"
+                              Content="PROFILER"
+                              IsChecked="{CompiledBinding ProfilerOpen, Mode=TwoWay}" />
+            </Grid>
+        </Border>
+
+        <!-- patch bar -->
+        <Border Grid.Row="1" Background="{DynamicResource DriftBgHiBrush}"
+                BorderBrush="{DynamicResource DriftBorderBrush}" BorderThickness="0,0,0,1"
+                Padding="20,8">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Classes="label" Text="PATCH" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox MinWidth="320"
+                          ItemsSource="{CompiledBinding PatchList}"
+                          SelectedItem="{CompiledBinding SelectedPatch}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="patches:PatchEntry">
+                            <TextBlock Text="{CompiledBinding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="SAVE" Click="OnSaveClick" />
+                <Button Content="SAVE AS..." Click="OnSaveAsClick" />
+                <Button Content="REFRESH" Click="OnRefreshPatchesClick" />
+                <Button Content="RANDOM" Click="OnRandomPatchClick" Margin="14,0,0,0"
+                        Foreground="{DynamicResource DriftMagentaBrush}" />
+                <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10"
+                           VerticalAlignment="Center" Margin="14,0,0,0"
+                           Text="{CompiledBinding PatchDisplayName}"
+                           ToolTip.Tip="A bullet next to the name means the patch has unsaved changes." />
+            </StackPanel>
+        </Border>
+
+        <!-- main synth grid: 5 columns x 2 rows -->
+        <Grid Grid.Row="2" Margin="14"
+              ColumnDefinitions="*,*,*,*,*"
+              RowDefinitions="*,*"
+              ColumnSpacing="12" RowSpacing="12">
+
+            <!-- ROW 0 -->
+            <Border Grid.Row="0" Grid.Column="0" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="OSCILLATOR 1" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Vertical" Spacing="6">
+                        <ComboBox ItemsSource="{x:Static c:EnumValues.Waveforms}"
+                                  SelectedItem="{CompiledBinding Patch.Osc1.Wave}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <c:WaveformIcon Value="{Binding}" Width="22" Height="12"
+                                                        VerticalAlignment="Center"
+                                                        Stroke="{DynamicResource DriftAccentBrush}" />
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <UniformGrid Columns="4" Margin="0,4,0,0">
+                            <StackPanel>
+                                <c:Knob Caption="OCT" Minimum="-3" Maximum="3" Step="1" Decimals="0" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc1Octave}"
+                                        Value="{CompiledBinding Patch.Osc1.Octave}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc1Octave}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="SEMI" Minimum="-12" Maximum="12" Step="1" Decimals="0" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc1Semi}"
+                                        Value="{CompiledBinding Patch.Osc1.Semitone}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc1Semi}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="FINE" Minimum="-100" Maximum="100" Decimals="0" Units="c" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc1Fine}"
+                                        Value="{CompiledBinding Patch.Osc1.FineCents}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc1Fine}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="LEVEL" Minimum="0" Maximum="1" Decimals="2"
+                                        ParamId="{x:Static c:ParamIds.Osc1Level}"
+                                        Value="{CompiledBinding Patch.Osc1.Level}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc1Level}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="1" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="OSCILLATOR 2" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Vertical" Spacing="6">
+                        <ComboBox ItemsSource="{x:Static c:EnumValues.Waveforms}"
+                                  SelectedItem="{CompiledBinding Patch.Osc2.Wave}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <c:WaveformIcon Value="{Binding}" Width="22" Height="12"
+                                                        VerticalAlignment="Center"
+                                                        Stroke="{DynamicResource DriftAccentBrush}" />
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <UniformGrid Columns="4" Margin="0,4,0,0">
+                            <StackPanel>
+                                <c:Knob Caption="OCT" Minimum="-3" Maximum="3" Step="1" Decimals="0" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc2Octave}"
+                                        Value="{CompiledBinding Patch.Osc2.Octave}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc2Octave}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="SEMI" Minimum="-12" Maximum="12" Step="1" Decimals="0" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc2Semi}"
+                                        Value="{CompiledBinding Patch.Osc2.Semitone}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc2Semi}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="FINE" Minimum="-100" Maximum="100" Decimals="0" Units="c" Bipolar="True"
+                                        ParamId="{x:Static c:ParamIds.Osc2Fine}"
+                                        Value="{CompiledBinding Patch.Osc2.FineCents}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc2Fine}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="LEVEL" Minimum="0" Maximum="1" Decimals="2"
+                                        ParamId="{x:Static c:ParamIds.Osc2Level}"
+                                        Value="{CompiledBinding Patch.Osc2.Level}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.Osc2Level}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="2" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="SUB + NOISE" Margin="0,0,0,8" />
+                    <UniformGrid Columns="2" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
+                            <c:Knob Caption="SUB" Minimum="0" Maximum="1" Decimals="2"
+                                    ParamId="{x:Static c:ParamIds.MixerSub}"
+                                    Value="{CompiledBinding Patch.Mixer.SubLevel}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.MixerSub}" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <c:Knob Caption="NOISE" Minimum="0" Maximum="1" Decimals="2"
+                                    ParamId="{x:Static c:ParamIds.MixerNoise}"
+                                    Value="{CompiledBinding Patch.Mixer.NoiseLevel}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.MixerNoise}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="3" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="FILTER (LPF)" Margin="0,0,0,8" />
+                    <c:FilterResponseCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
+                                           Source="{CompiledBinding Patch.Filter}"
+                                           Accent="{DynamicResource DriftAmberBrush}" />
+                    <UniformGrid Columns="4">
+                        <StackPanel>
+                            <c:Knob Caption="CUTOFF" Minimum="20" Maximum="18000" Logarithmic="True" Decimals="0"
+                                    Units=" Hz"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterCutoff}"
+                                    Value="{CompiledBinding Patch.Filter.Cutoff}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterCutoff}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="RESO" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterResonance}"
+                                    Value="{CompiledBinding Patch.Filter.Resonance}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterResonance}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="ENV" Minimum="-1" Maximum="1" Decimals="2" Bipolar="True"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterEnvAmount}"
+                                    Value="{CompiledBinding Patch.Filter.EnvAmount}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterEnvAmount}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="TRACK" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterKeyTrack}"
+                                    Value="{CompiledBinding Patch.Filter.KeyTrack}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterKeyTrack}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="4" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="VOICE" Margin="0,0,0,8" />
+                    <Grid RowDefinitions="*,Auto" RowSpacing="8">
+                        <UniformGrid Grid.Row="0" Columns="1">
+                            <StackPanel>
+                                <c:Knob Caption="GLIDE" Minimum="0" Maximum="2" Decimals="3" Units="s"
+                                        Accent="{DynamicResource DriftAccentBrush}"
+                                        ParamId="{x:Static c:ParamIds.VoiceGlide}"
+                                        Value="{CompiledBinding Patch.Voice.Glide}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.VoiceGlide}" />
+                            </StackPanel>
+                        </UniformGrid>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <ToggleButton Content="MONO" IsChecked="{CompiledBinding Patch.Voice.Mono}" />
+                            <ToggleButton Content="LEGATO" IsChecked="{CompiledBinding Patch.Voice.MonoLegato}" />
+                        </StackPanel>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- ROW 1 -->
+            <Border Grid.Row="1" Grid.Column="0" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="AMP ENV" Margin="0,0,0,8" />
+                    <c:EnvelopeCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
+                                     Source="{CompiledBinding Patch.AmpEnv}"
+                                     Accent="{DynamicResource DriftGreenBrush}" />
+                    <UniformGrid Columns="4">
+                        <StackPanel>
+                            <c:Knob Caption="A" Minimum="0.001" Maximum="6" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftGreenBrush}"
+                                    ParamId="{x:Static c:ParamIds.AmpEnvAttack}"
+                                    Value="{CompiledBinding Patch.AmpEnv.Attack}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.AmpEnvAttack}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="D" Minimum="0.001" Maximum="8" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftGreenBrush}"
+                                    ParamId="{x:Static c:ParamIds.AmpEnvDecay}"
+                                    Value="{CompiledBinding Patch.AmpEnv.Decay}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.AmpEnvDecay}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="S" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftGreenBrush}"
+                                    ParamId="{x:Static c:ParamIds.AmpEnvSustain}"
+                                    Value="{CompiledBinding Patch.AmpEnv.Sustain}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.AmpEnvSustain}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="R" Minimum="0.001" Maximum="8" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftGreenBrush}"
+                                    ParamId="{x:Static c:ParamIds.AmpEnvRelease}"
+                                    Value="{CompiledBinding Patch.AmpEnv.Release}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.AmpEnvRelease}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="1" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="FILTER ENV" Margin="0,0,0,8" />
+                    <c:EnvelopeCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
+                                     Source="{CompiledBinding Patch.FilterEnv}"
+                                     Accent="{DynamicResource DriftAmberBrush}" />
+                    <UniformGrid Columns="4">
+                        <StackPanel>
+                            <c:Knob Caption="A" Minimum="0.001" Maximum="6" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterEnvAttack}"
+                                    Value="{CompiledBinding Patch.FilterEnv.Attack}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterEnvAttack}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="D" Minimum="0.001" Maximum="8" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterEnvDecay}"
+                                    Value="{CompiledBinding Patch.FilterEnv.Decay}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterEnvDecay}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="S" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterEnvSustain}"
+                                    Value="{CompiledBinding Patch.FilterEnv.Sustain}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterEnvSustain}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="R" Minimum="0.001" Maximum="8" Logarithmic="True" Decimals="3" Units="s"
+                                    Accent="{DynamicResource DriftAmberBrush}"
+                                    ParamId="{x:Static c:ParamIds.FilterEnvRelease}"
+                                    Value="{CompiledBinding Patch.FilterEnv.Release}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.FilterEnvRelease}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="2" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="LFO + MOD WHEEL" Margin="0,0,0,8" />
+                    <c:LfoWaveformPreview DockPanel.Dock="Bottom" Margin="0,8,0,0"
+                                          Source="{CompiledBinding Patch.Lfo}"
+                                          Accent="{DynamicResource DriftMagentaBrush}" />
+                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6">
+                        <ComboBox Grid.Row="0"
+                                  ItemsSource="{x:Static c:EnumValues.LfoShapes}"
+                                  SelectedItem="{CompiledBinding Patch.Lfo.Shape}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <c:WaveformIcon Value="{Binding}" Width="22" Height="12"
+                                                        VerticalAlignment="Center"
+                                                        Stroke="{DynamicResource DriftMagentaBrush}" />
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ComboBox Grid.Row="1"
+                                  ItemsSource="{x:Static c:EnumValues.LfoTargets}"
+                                  SelectedItem="{CompiledBinding Patch.Lfo.Target}"
+                                  HorizontalAlignment="Stretch" />
+                        <UniformGrid Grid.Row="2" Columns="2" Margin="0,4,0,0">
+                            <StackPanel>
+                                <c:Knob Caption="RATE" Minimum="0.05" Maximum="20" Logarithmic="True" Decimals="2"
+                                        Units=" Hz"
+                                        Accent="{DynamicResource DriftMagentaBrush}"
+                                        ParamId="{x:Static c:ParamIds.LfoRate}"
+                                        Value="{CompiledBinding Patch.Lfo.Rate}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.LfoRate}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <c:Knob Caption="AMOUNT" Minimum="0" Maximum="1" Decimals="2"
+                                        Accent="{DynamicResource DriftMagentaBrush}"
+                                        ParamId="{x:Static c:ParamIds.LfoAmount}"
+                                        Value="{CompiledBinding Patch.Lfo.Amount}" />
+                                <c:MidiBindRow ParamId="{x:Static c:ParamIds.LfoAmount}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="3" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="DELAY" Margin="0,0,0,8" />
+                    <UniformGrid Columns="4">
+                        <StackPanel>
+                            <c:Knob Caption="TIME" Minimum="10" Maximum="1500" Logarithmic="True" Decimals="0" Units=" ms"
+                                    Accent="{DynamicResource DriftVioletBrush}"
+                                    ParamId="{x:Static c:ParamIds.DelayTime}"
+                                    Value="{CompiledBinding Patch.Delay.TimeMs}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.DelayTime}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="FBK" Minimum="0" Maximum="0.92" Decimals="2"
+                                    Accent="{DynamicResource DriftVioletBrush}"
+                                    ParamId="{x:Static c:ParamIds.DelayFeedback}"
+                                    Value="{CompiledBinding Patch.Delay.Feedback}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.DelayFeedback}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="TONE" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftVioletBrush}"
+                                    ParamId="{x:Static c:ParamIds.DelayTone}"
+                                    Value="{CompiledBinding Patch.Delay.Tone}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.DelayTone}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <c:Knob Caption="MIX" Minimum="0" Maximum="1" Decimals="2"
+                                    Accent="{DynamicResource DriftVioletBrush}"
+                                    ParamId="{x:Static c:ParamIds.DelayMix}"
+                                    Value="{CompiledBinding Patch.Delay.Mix}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.DelayMix}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="4" Classes="panel">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="title" Text="REVERB" Margin="0,0,0,8" />
+                    <UniformGrid Columns="3" VerticalAlignment="Center">
+                        <StackPanel VerticalAlignment="Center">
+                            <c:Knob Caption="MIX" Minimum="0" Maximum="1" Decimals="2"
+                                    ParamId="{x:Static c:ParamIds.MasterReverbMix}"
+                                    Value="{CompiledBinding Patch.Master.ReverbMix}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.MasterReverbMix}" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <c:Knob Caption="SIZE" Minimum="0" Maximum="1" Decimals="2"
+                                    ParamId="{x:Static c:ParamIds.MasterReverbSize}"
+                                    Value="{CompiledBinding Patch.Master.ReverbSize}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.MasterReverbSize}" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <c:Knob Caption="DAMP" Minimum="0" Maximum="1" Decimals="2"
+                                    ParamId="{x:Static c:ParamIds.MasterReverbDamp}"
+                                    Value="{CompiledBinding Patch.Master.ReverbDamp}" />
+                            <c:MidiBindRow ParamId="{x:Static c:ParamIds.MasterReverbDamp}" />
+                        </StackPanel>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- ARPEGGIATOR -->
+        <Border Grid.Row="3" Classes="panel" Margin="14,0,14,14">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="title" Text="ARPEGGIATOR" Margin="0,0,0,10" />
+                <Grid ColumnDefinitions="Auto,200,Auto,90,120,Auto,Auto,Auto,Auto,Auto"
+                      ColumnSpacing="18" VerticalAlignment="Center">
+
+                    <ToggleButton Grid.Column="0" Content="ON" Classes="arp-on"
+                                  IsChecked="{CompiledBinding Patch.Arp.On}"
+                                  VerticalAlignment="Center" />
+
+                    <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+                        <TextBlock Classes="label" HorizontalAlignment="Left" Text="PRESET" Margin="0,0,0,4" />
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Static c:EnumValues.ArpPresetList}"
+                                  SelectedItem="{CompiledBinding SelectedArpPreset}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <c:Knob Caption="BPM" Minimum="40" Maximum="240" Step="1" Decimals="0"
+                                Accent="{DynamicResource DriftMagentaBrush}"
+                                ParamId="{x:Static c:ParamIds.ArpBpm}"
+                                Value="{CompiledBinding Patch.Arp.Bpm}" />
+                        <c:MidiBindRow ParamId="{x:Static c:ParamIds.ArpBpm}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Vertical" VerticalAlignment="Center">
+                        <TextBlock Classes="label" HorizontalAlignment="Left" Text="RATE" Margin="0,0,0,4" />
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Static c:EnumValues.ArpRates}"
+                                  SelectedItem="{CompiledBinding Patch.Arp.Rate}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center">
+                        <TextBlock Classes="label" HorizontalAlignment="Left" Text="MODE" Margin="0,0,0,4" />
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Static c:EnumValues.ArpModes}"
+                                  SelectedItem="{CompiledBinding Patch.Arp.Mode}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="5" VerticalAlignment="Center">
+                        <c:Knob Caption="OCT" Minimum="1" Maximum="4" Step="1" Decimals="0"
+                                Accent="{DynamicResource DriftMagentaBrush}"
+                                ParamId="{x:Static c:ParamIds.ArpOctaves}"
+                                Value="{CompiledBinding Patch.Arp.Octaves}" />
+                        <c:MidiBindRow ParamId="{x:Static c:ParamIds.ArpOctaves}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="6" VerticalAlignment="Center">
+                        <c:Knob Caption="GATE" Minimum="0.05" Maximum="1" Decimals="2"
+                                Accent="{DynamicResource DriftMagentaBrush}"
+                                ParamId="{x:Static c:ParamIds.ArpGate}"
+                                Value="{CompiledBinding Patch.Arp.Gate}" />
+                        <c:MidiBindRow ParamId="{x:Static c:ParamIds.ArpGate}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="7" VerticalAlignment="Center">
+                        <c:Knob Caption="SWING" Minimum="0" Maximum="0.75" Decimals="2"
+                                Accent="{DynamicResource DriftMagentaBrush}"
+                                ParamId="{x:Static c:ParamIds.ArpSwing}"
+                                Value="{CompiledBinding Patch.Arp.Swing}" />
+                        <c:MidiBindRow ParamId="{x:Static c:ParamIds.ArpSwing}" />
+                    </StackPanel>
+
+                    <ToggleButton Grid.Column="8" Content="LATCH"
+                                  IsChecked="{CompiledBinding Patch.Arp.Latch}"
+                                  Width="70" Height="32" VerticalAlignment="Center" Margin="14,0,0,0" />
+
+                    <Button Grid.Column="9" Content="CLEAR" Click="OnArpClearClick"
+                            Width="70" Height="32" VerticalAlignment="Center" Margin="6,0,0,0" />
+                </Grid>
+            </DockPanel>
+        </Border>
+
+        <!-- status bar -->
+        <Border Grid.Row="4" Background="{DynamicResource DriftBgHiBrush}"
+                BorderBrush="{DynamicResource DriftBorderBrush}" BorderThickness="0,1,0,0"
+                Padding="20,6">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Foreground="{DynamicResource DriftTextDimBrush}" FontSize="11"
+                           VerticalAlignment="Center" Text="{CompiledBinding StatusText}" />
+                <Border Grid.Column="1" Width="20" Height="20" CornerRadius="10"
+                        Background="{DynamicResource DriftBgBrush}"
+                        BorderBrush="{DynamicResource DriftBorderBrush}" BorderThickness="1"
+                        ToolTip.Tip="Knobs: drag to change, shift+drag for fine, wheel to tweak, double-click for default.&#x0a;Mod wheel: vibrato. Sustain pedal (CC 64) holds notes. CC 120 / 123: panic / all notes off.&#x0a;Esc: cancel any pending MIDI Learn.">
+                    <TextBlock Text="?" Foreground="{DynamicResource DriftTextDimBrush}"
+                               FontSize="12" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Border>
+        </Grid>
+
+        <!-- Runtime profiler (dev / performance): UI-thread GC + process; audio-thread EMAs when driver is open -->
+        <Border ZIndex="100"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Width="440"
+                Margin="0"
+                Background="#E8121820"
+                BorderBrush="{DynamicResource DriftBorderBrush}"
+                BorderThickness="1,0,0,0"
+                IsVisible="{CompiledBinding ProfilerOpen}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="18,14" Spacing="10">
+                    <TextBlock Classes="title" HorizontalAlignment="Left" Text="RUNTIME PROFILER" />
+                    <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10" TextWrapping="Wrap"
+                               Text="Diagnostic readout. Per-block times use Stopwatch.GetTimestamp on the audio callback only while this panel is open; GC and process stats refresh on a UI timer (~250 ms)." />
+                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="11" TextWrapping="Wrap"
+                               Text="{CompiledBinding ProfilerBudgetText}" />
+                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
+                               HorizontalAlignment="Left" Text="MIXER.READ (EMA µs / block)" Margin="0,6,0,0" />
+                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
+                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
+                               Text="{CompiledBinding ProfilerMixerBody}" />
+                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
+                               HorizontalAlignment="Left" Text="MANAGED HEAP + GC" Margin="0,8,0,0" />
+                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
+                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
+                               Text="{CompiledBinding ProfilerManagedBody}" />
+                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
+                               HorizontalAlignment="Left" Text="PROCESS" Margin="0,8,0,0" />
+                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
+                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
+                               Text="{CompiledBinding ProfilerProcessBody}" />
+                    <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10" TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Text="Allocations on the realtime thread are not measured here; sampling with GC.GetAllocatedBytesForCurrentThread from the callback can perturb timing and is misleading under load." />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
