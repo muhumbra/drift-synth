@@ -40,8 +40,6 @@ public sealed class AudioEngine : IDisposable
 
     public LevelMonitor? Levels => _mixer?.Levels;
 
-    public MixerProfiler? Profiler => _mixer?.Profiler;
-
     public void Dispose()
     {
         CloseDriver();

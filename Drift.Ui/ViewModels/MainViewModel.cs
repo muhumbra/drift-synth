@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -27,27 +26,6 @@ public sealed class MainViewModel : Observable
     private PatchEntry? _selectedPatch;
 
     private string _statusText = "Ready. Pick an ASIO driver to start.";
-
-    private bool _profilerOpen;
-
-    private DispatcherTimer? _profilerTimer;
-
-    private Process? _diagProcess;
-
-    private bool _diagCpuPrimed;
-
-    private TimeSpan _diagLastCpu = TimeSpan.Zero;
-
-    private long _diagLastWallMs;
-
-    private string _profilerMixerBody =
-        "Per-block timings require an ASIO driver (mixer not built yet).";
-
-    private string _profilerManagedBody = "";
-
-    private string _profilerProcessBody = "";
-
-    private string _profilerBudgetText = "";
 
     private readonly string _settingsPath;
 
@@ -136,65 +114,6 @@ public sealed class MainViewModel : Observable
     public LevelMonitor? Levels => Engine.Levels;
     public MidiInputManager Midi => Engine.Midi;
     public MidiCcMap CcMap => Engine.CcMap;
-
-    public bool ProfilerOpen
-    {
-        get => _profilerOpen;
-        set
-        {
-            if (!Set(ref _profilerOpen, value))
-            {
-                return;
-            }
-
-            if (value)
-            {
-                Engine.Profiler?.ResetEma();
-                if (Engine.Profiler is not null)
-                {
-                    Engine.Profiler.Enabled = true;
-                }
-
-                _diagCpuPrimed = false;
-                EnsureProfilerTimer();
-                _profilerTimer!.Start();
-                RefreshProfilerDisplay();
-            }
-            else
-            {
-                if (Engine.Profiler is not null)
-                {
-                    Engine.Profiler.Enabled = false;
-                }
-
-                _profilerTimer?.Stop();
-            }
-        }
-    }
-
-    public string ProfilerMixerBody
-    {
-        get => _profilerMixerBody;
-        private set => Set(ref _profilerMixerBody, value);
-    }
-
-    public string ProfilerManagedBody
-    {
-        get => _profilerManagedBody;
-        private set => Set(ref _profilerManagedBody, value);
-    }
-
-    public string ProfilerProcessBody
-    {
-        get => _profilerProcessBody;
-        private set => Set(ref _profilerProcessBody, value);
-    }
-
-    public string ProfilerBudgetText
-    {
-        get => _profilerBudgetText;
-        private set => Set(ref _profilerBudgetText, value);
-    }
 
     public IReadOnlyList<string> AsioDrivers { get; private set; } = [];
     public IReadOnlyList<string> MidiInputs { get; private set; } = [];
@@ -523,11 +442,6 @@ public sealed class MainViewModel : Observable
             PlayLabel = "START AUDIO";
             StatusText = "No driver. Pick one above.";
             Raise(nameof(Levels));
-            if (_profilerOpen)
-            {
-                RefreshProfilerDisplay();
-            }
-
             ScheduleSettingsSave();
             return;
         }
@@ -539,17 +453,6 @@ public sealed class MainViewModel : Observable
             StatusText = $"Opened {Engine.CurrentDriverName}.";
             PlayLabel = Engine.IsPlaying ? "STOP AUDIO" : "START AUDIO";
             Raise(nameof(Levels));
-            if (_profilerOpen && Engine.Profiler is not null)
-            {
-                Engine.Profiler.Enabled = true;
-                Engine.Profiler.ResetEma();
-            }
-
-            if (_profilerOpen)
-            {
-                RefreshProfilerDisplay();
-            }
-
             ScheduleSettingsSave();
         }
         catch (Exception ex)
@@ -752,121 +655,5 @@ public sealed class MainViewModel : Observable
         {
             // Avoid surfacing IO errors from background debounce; next close will retry.
         }
-    }
-
-    private void EnsureProfilerTimer()
-    {
-        if (_profilerTimer is not null)
-        {
-            return;
-        }
-
-        _profilerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-        _profilerTimer.Tick += (_, _) => RefreshProfilerDisplay();
-    }
-
-    private void RefreshProfilerDisplay()
-    {
-        if (!_profilerOpen)
-        {
-            return;
-        }
-
-        RefreshProfilerManagedAndProcess();
-
-        var p = Engine.Profiler;
-        if (p is null)
-        {
-            ProfilerMixerBody =
-                "Per-block timings require an ASIO driver (the mixer is created when a driver opens).";
-            ProfilerBudgetText = "";
-            Raise(nameof(ProfilerMixerBody));
-            Raise(nameof(ProfilerBudgetText));
-            return;
-        }
-
-        var budget = Engine.CurrentLatencyMs > 0
-            ? $"ASIO buffer ~{Engine.CurrentLatencyMs} ms @ {Engine.SampleRate} Hz — keep TOTAL EMA comfortably below the buffer."
-            : "Open a driver to see the nominal block budget.";
-        if (!Engine.IsPlaying)
-        {
-            budget += " Mixer.Read runs only while audio is playing; timings hold at the last EMA until you press START.";
-        }
-
-        ProfilerBudgetText = budget;
-
-        ProfilerMixerBody =
-            $"SETUP (buf + arp edge)\t{p.EmaUsSetup,9:0.0} µs\n" +
-            $"MIDI drain\t{p.EmaUsMidi,9:0.0} µs\n" +
-            $"ARP tick\t{p.EmaUsArp,9:0.0} µs\n" +
-            $"Voices render\t{p.EmaUsVoices,9:0.0} µs\n" +
-            $"FX + mix + levels\t{p.EmaUsFx,9:0.0} µs\n" +
-            $"TOTAL (callback)\t{p.EmaUsTotal,9:0.0} µs\n" +
-            $"Blocks measured\t{p.Blocks}";
-
-        Raise(nameof(ProfilerMixerBody));
-        Raise(nameof(ProfilerBudgetText));
-    }
-
-    private void RefreshProfilerManagedAndProcess()
-    {
-        try
-        {
-            _diagProcess ??= Process.GetCurrentProcess();
-            _diagProcess.Refresh();
-            var wsMb = _diagProcess.WorkingSet64 / (1024.0 * 1024.0);
-
-            var wall = Environment.TickCount64;
-            if (!_diagCpuPrimed)
-            {
-                _diagLastCpu = _diagProcess.TotalProcessorTime;
-                _diagLastWallMs = wall;
-                _diagCpuPrimed = true;
-                ProfilerProcessBody = $"Working set: {wsMb:0.#} MB  |  CPU: … (next sample)";
-            }
-            else
-            {
-                var wallDelta = wall - _diagLastWallMs;
-                _diagLastWallMs = wall;
-                if (wallDelta < 1)
-                {
-                    wallDelta = 1;
-                }
-
-                var newCpu = _diagProcess.TotalProcessorTime;
-                var cpuDelta = newCpu - _diagLastCpu;
-                _diagLastCpu = newCpu;
-                var cores = Math.Max(1, Environment.ProcessorCount);
-                var pct = 100.0 * cpuDelta.TotalMilliseconds / (wallDelta * cores);
-                ProfilerProcessBody = $"Working set: {wsMb:0.#} MB  |  CPU (~app): {pct:0.#} %";
-            }
-        }
-        catch (Exception ex)
-        {
-            ProfilerProcessBody = $"Process stats unavailable ({ex.Message})";
-        }
-
-        try
-        {
-            var heapMb = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
-            var gci = GC.GetGCMemoryInfo();
-            var committedMb = gci.TotalCommittedBytes / (1024.0 * 1024.0);
-            var g0 = GC.CollectionCount(0);
-            var g1 = GC.CollectionCount(1);
-            var g2 = GC.CollectionCount(2);
-            ProfilerManagedBody =
-                $"GetTotalMemory (no full collect): {heapMb:0.##} MB\n" +
-                $"GC total committed: {committedMb:0.##} MB\n" +
-                $"GC collections gen0 / gen1 / gen2: {g0} / {g1} / {g2}\n" +
-                $"ThreadPool threads: {ThreadPool.ThreadCount}\n" +
-                $"ThreadPool pending work items: {ThreadPool.PendingWorkItemCount}";
-        }
-        catch (Exception ex)
-        {
-            ProfilerManagedBody = $"GC info unavailable ({ex.Message})";
-        }
-
-        Raise(nameof(ProfilerManagedBody));
-        Raise(nameof(ProfilerProcessBody));
     }
 }

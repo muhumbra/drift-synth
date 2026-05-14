@@ -17,7 +17,7 @@ public sealed class Arpeggiator
     private readonly ArpParams _params;
 
     private readonly HashSet<int> _physicallyHeld = new();
-    private readonly FastRng _rng;
+    private FastRng _rng;
     private readonly int _sampleRate;
     private readonly List<int> _sequence = new();
 

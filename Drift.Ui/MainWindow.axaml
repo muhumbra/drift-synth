@@ -21,7 +21,7 @@
 
         <!-- top transport bar -->
         <Border Grid.Row="0" Classes="topbar">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Ellipse Width="10" Height="10" Fill="{DynamicResource DriftAccentBrush}">
                         <Ellipse.Effect>
@@ -81,10 +81,6 @@
 
                 <Button Grid.Column="9" Margin="6,0,0,0" Classes="danger"
                         Content="PANIC" Click="OnPanicClick" />
-
-                <ToggleButton Grid.Column="10" Margin="8,0,0,0"
-                              Content="PROFILER"
-                              IsChecked="{CompiledBinding ProfilerOpen, Mode=TwoWay}" />
             </Grid>
         </Border>
 
@@ -241,9 +237,6 @@
             <Border Grid.Row="0" Grid.Column="3" Classes="panel">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Classes="title" Text="FILTER (LPF)" Margin="0,0,0,8" />
-                    <c:FilterResponseCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
-                                           Source="{CompiledBinding Patch.Filter}"
-                                           Accent="{DynamicResource DriftAmberBrush}" />
                     <UniformGrid Columns="4">
                         <StackPanel>
                             <c:Knob Caption="CUTOFF" Minimum="20" Maximum="18000" Logarithmic="True" Decimals="0"
@@ -303,9 +296,6 @@
             <Border Grid.Row="1" Grid.Column="0" Classes="panel">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Classes="title" Text="AMP ENV" Margin="0,0,0,8" />
-                    <c:EnvelopeCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
-                                     Source="{CompiledBinding Patch.AmpEnv}"
-                                     Accent="{DynamicResource DriftGreenBrush}" />
                     <UniformGrid Columns="4">
                         <StackPanel>
                             <c:Knob Caption="A" Minimum="0.001" Maximum="6" Logarithmic="True" Decimals="3" Units="s"
@@ -342,9 +332,6 @@
             <Border Grid.Row="1" Grid.Column="1" Classes="panel">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Classes="title" Text="FILTER ENV" Margin="0,0,0,8" />
-                    <c:EnvelopeCurve DockPanel.Dock="Bottom" Margin="0,8,0,0"
-                                     Source="{CompiledBinding Patch.FilterEnv}"
-                                     Accent="{DynamicResource DriftAmberBrush}" />
                     <UniformGrid Columns="4">
                         <StackPanel>
                             <c:Knob Caption="A" Minimum="0.001" Maximum="6" Logarithmic="True" Decimals="3" Units="s"
@@ -381,9 +368,6 @@
             <Border Grid.Row="1" Grid.Column="2" Classes="panel">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Classes="title" Text="LFO + MOD WHEEL" Margin="0,0,0,8" />
-                    <c:LfoWaveformPreview DockPanel.Dock="Bottom" Margin="0,8,0,0"
-                                          Source="{CompiledBinding Patch.Lfo}"
-                                          Accent="{DynamicResource DriftMagentaBrush}" />
                     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="6">
                         <ComboBox Grid.Row="0"
                                   ItemsSource="{x:Static c:EnumValues.LfoShapes}"
@@ -578,44 +562,5 @@
             </Grid>
         </Border>
         </Grid>
-
-        <!-- Runtime profiler (dev / performance): UI-thread GC + process; audio-thread EMAs when driver is open -->
-        <Border ZIndex="100"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Stretch"
-                Width="440"
-                Margin="0"
-                Background="#E8121820"
-                BorderBrush="{DynamicResource DriftBorderBrush}"
-                BorderThickness="1,0,0,0"
-                IsVisible="{CompiledBinding ProfilerOpen}">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="18,14" Spacing="10">
-                    <TextBlock Classes="title" HorizontalAlignment="Left" Text="RUNTIME PROFILER" />
-                    <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10" TextWrapping="Wrap"
-                               Text="Diagnostic readout. Per-block times use Stopwatch.GetTimestamp on the audio callback only while this panel is open; GC and process stats refresh on a UI timer (~250 ms)." />
-                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="11" TextWrapping="Wrap"
-                               Text="{CompiledBinding ProfilerBudgetText}" />
-                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
-                               HorizontalAlignment="Left" Text="MIXER.READ (EMA µs / block)" Margin="0,6,0,0" />
-                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
-                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
-                               Text="{CompiledBinding ProfilerMixerBody}" />
-                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
-                               HorizontalAlignment="Left" Text="MANAGED HEAP + GC" Margin="0,8,0,0" />
-                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
-                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
-                               Text="{CompiledBinding ProfilerManagedBody}" />
-                    <TextBlock Foreground="{DynamicResource DriftTextDimBrush}" FontSize="10" LetterSpacing="2"
-                               HorizontalAlignment="Left" Text="PROCESS" Margin="0,8,0,0" />
-                    <TextBlock FontFamily="Consolas,Courier New,monospace" FontSize="12"
-                               Foreground="{DynamicResource DriftTextDimBrush}" TextWrapping="Wrap"
-                               Text="{CompiledBinding ProfilerProcessBody}" />
-                    <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10" TextWrapping="Wrap"
-                               Margin="0,10,0,0"
-                               Text="Allocations on the realtime thread are not measured here; sampling with GC.GetAllocatedBytesForCurrentThread from the callback can perturb timing and is misleading under load." />
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
     </Grid>
 </Window>

@@ -94,16 +94,6 @@ public sealed class VoicePool
 
     private void PolyNoteOn(int note, float velocity)
     {
-        for (var i = 0; i < _voices.Length; i++)
-        {
-            if (_voices[i].Note == note && _voices[i].IsActive)
-            {
-                _heldByPedal[i] = false;
-                _voices[i].NoteOn(note, velocity);
-                return;
-            }
-        }
-
         var idx = FindVoiceToSteal();
         _heldByPedal[idx] = false;
         _voices[idx].NoteOn(note, velocity);

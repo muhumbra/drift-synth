@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Drift.Engine.Dsp.Lut;
 using Drift.Engine.Effects;
 using Drift.Engine.Midi;
@@ -44,20 +43,10 @@ public sealed class Mixer : ISampleProvider
 
     public LevelMonitor Levels { get; } = new();
 
-    public MixerProfiler Profiler { get; } = new();
-
     public WaveFormat WaveFormat { get; }
 
     public int Read(float[] buffer, int offset, int count)
     {
-        var prof = Profiler;
-        var profile = prof.Enabled;
-        long t0 = 0, t1 = 0, t2 = 0, t3 = 0, t4 = 0, t5 = 0;
-        if (profile)
-        {
-            t0 = Stopwatch.GetTimestamp();
-        }
-
         var frames = count / 2;
         if (_voiceBuffer.Length < frames)
         {
@@ -67,22 +56,10 @@ public sealed class Mixer : ISampleProvider
         Array.Clear(_voiceBuffer, 0, frames);
 
         HandleArpToggleEdges();
-        if (profile)
-        {
-            t1 = Stopwatch.GetTimestamp();
-        }
 
         DrainMidi();
-        if (profile)
-        {
-            t2 = Stopwatch.GetTimestamp();
-        }
 
         Arp.Tick(frames, Pool);
-        if (profile)
-        {
-            t3 = Stopwatch.GetTimestamp();
-        }
 
         foreach (var v in Pool.Voices)
         {
@@ -90,11 +67,6 @@ public sealed class Mixer : ISampleProvider
             {
                 v.RenderBlock(_voiceBuffer, 0, frames);
             }
-        }
-
-        if (profile)
-        {
-            t4 = Stopwatch.GetTimestamp();
         }
 
         var master = Patch.Master;
@@ -153,12 +125,6 @@ public sealed class Mixer : ISampleProvider
 
         Levels.ActiveVoices = active;
         Levels.PolyphonyMax = Patch.Polyphony;
-
-        if (profile)
-        {
-            t5 = Stopwatch.GetTimestamp();
-            prof.RecordBlock(t0, t1, t2, t3, t4, t5);
-        }
 
         return count;
     }
