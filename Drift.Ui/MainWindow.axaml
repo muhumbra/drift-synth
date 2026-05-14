@@ -21,7 +21,9 @@
 
         <!-- top transport bar -->
         <Border Grid.Row="0" Classes="topbar">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto"
+                  VerticalAlignment="Center"
+                  MinHeight="36">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Ellipse Width="10" Height="10" Fill="{DynamicResource DriftAccentBrush}">
                         <Ellipse.Effect>
@@ -34,52 +36,51 @@
                 </StackPanel>
 
                 <c:LevelMeter Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center"
+                              MaxHeight="28"
                               Source="{CompiledBinding Levels}" />
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="18,0,0,0"
-                            VerticalAlignment="Center">
-                    <TextBlock Classes="label" Text="VOL" VerticalAlignment="Center" />
-                    <Slider Width="120" Minimum="0" Maximum="1"
-                            VerticalAlignment="Center"
-                            Value="{CompiledBinding Patch.Master.Volume}"
-                            ToolTip.Tip="Master output volume" />
-                    <TextBlock Classes="value" VerticalAlignment="Center" MinWidth="32"
-                               Text="{CompiledBinding Patch.Master.Volume, StringFormat={}{0:0.00}}" />
-                </StackPanel>
+                <!-- Stretch in the toolbar row so we can *-Auto-* center the slider strip (Fluent slider is tall inside its slot). -->
+                <Grid Grid.Column="2" Margin="18,0,0,0" VerticalAlignment="Stretch"
+                      RowDefinitions="*,Auto,*">
+                    <Grid Grid.Row="1" ColumnDefinitions="Auto,120,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="label" Text="VOL" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1"
+                                VerticalAlignment="Center"
+                                MinHeight="0"
+                                MaxHeight="26"
+                                Margin="8,0,8,0"
+                                Minimum="0" Maximum="1"
+                                Value="{CompiledBinding Patch.Master.Volume}"
+                                ToolTip.Tip="Master output volume" />
+                        <TextBlock Grid.Column="2" Classes="value" VerticalAlignment="Center" MinWidth="32"
+                                   Text="{CompiledBinding Patch.Master.Volume, StringFormat={}{0:0.00}}" />
+                    </Grid>
+                </Grid>
 
                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <TextBlock Classes="label" Text="ASIO" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <ComboBox MinWidth="200"
+                              VerticalAlignment="Center"
                               ItemsSource="{CompiledBinding AsioDrivers}"
                               SelectedItem="{CompiledBinding SelectedDriver}" />
-                    <Button Content="SETTINGS" Click="OnAsioSettingsClick" />
+                    <Button Content="SETTINGS" VerticalAlignment="Center" Click="OnAsioSettingsClick" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" Margin="14,0,0,0"
                             VerticalAlignment="Center">
                     <TextBlock Classes="label" Text="MIDI" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <ComboBox MinWidth="200"
+                              VerticalAlignment="Center"
                               ItemsSource="{CompiledBinding MidiInputs}"
                               SelectedItem="{CompiledBinding SelectedMidi}" />
-                    <c:MidiActivityDots Margin="6,0,0,0" VerticalAlignment="Center"
-                                        Source="{CompiledBinding Midi}"
-                                        ToolTip.Tip="MIDI activity: N = notes · CC = controllers (not CC1) · BND = pitch bend · MOD = mod wheel (CC1)" />
+                    <c:MidiActivityStrip Margin="6,0,0,0" VerticalAlignment="Center"
+                                         Source="{CompiledBinding Midi}" />
                 </StackPanel>
 
-                <Border Grid.Column="6" Width="1" Margin="14,8,0,8"
-                        Background="{DynamicResource DriftBorderBrush}" />
-
-                <Border Grid.Column="7" Margin="14,0,0,0" Padding="10,4"
-                        Background="{DynamicResource DriftBgBrush}"
-                        BorderBrush="{DynamicResource DriftBorderBrush}"
-                        BorderThickness="1" CornerRadius="3">
-                    <TextBlock Classes="value" Text="{CompiledBinding LatencyText}" />
-                </Border>
-
-                <Button Grid.Column="8" Margin="14,0,0,0" Classes="primary"
+                <Button Grid.Column="6" Margin="14,0,0,0" VerticalAlignment="Center" Classes="primary"
                         Content="{CompiledBinding PlayLabel}" Click="OnPlayClick" MinWidth="120" />
 
-                <Button Grid.Column="9" Margin="6,0,0,0" Classes="danger"
+                <Button Grid.Column="7" Margin="6,0,0,0" VerticalAlignment="Center" Classes="danger"
                         Content="PANIC" Click="OnPanicClick" />
             </Grid>
         </Border>
@@ -104,10 +105,6 @@
                 <Button Content="REFRESH" Click="OnRefreshPatchesClick" />
                 <Button Content="RANDOM" Click="OnRandomPatchClick" Margin="14,0,0,0"
                         Foreground="{DynamicResource DriftMagentaBrush}" />
-                <TextBlock Foreground="{DynamicResource DriftTextFaintBrush}" FontSize="10"
-                           VerticalAlignment="Center" Margin="14,0,0,0"
-                           Text="{CompiledBinding PatchDisplayName}"
-                           ToolTip.Tip="A bullet next to the name means the patch has unsaved changes." />
             </StackPanel>
         </Border>
 

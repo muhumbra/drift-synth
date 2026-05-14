@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Drift.Ui.Controls.MidiActivityStrip"
+             MinWidth="118"
+             MinHeight="34"
+             ToolTip.Tip="MIDI activity: N = notes · CC = controllers (not CC1) · BND = pitch bend · MOD = mod wheel (CC1)">
+    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <StackPanel MinWidth="24" Spacing="3" HorizontalAlignment="Center">
+            <Ellipse x:Name="DotNote" Width="10" Height="10" HorizontalAlignment="Center" />
+            <TextBlock Text="N" FontSize="8" HorizontalAlignment="Center"
+                       Foreground="#4A5260" />
+        </StackPanel>
+        <StackPanel MinWidth="24" Spacing="3" HorizontalAlignment="Center">
+            <Ellipse x:Name="DotCc" Width="10" Height="10" HorizontalAlignment="Center" />
+            <TextBlock Text="CC" FontSize="8" HorizontalAlignment="Center"
+                       Foreground="#4A5260" />
+        </StackPanel>
+        <StackPanel MinWidth="24" Spacing="3" HorizontalAlignment="Center">
+            <Ellipse x:Name="DotBend" Width="10" Height="10" HorizontalAlignment="Center" />
+            <TextBlock Text="BND" FontSize="8" HorizontalAlignment="Center"
+                       Foreground="#4A5260" />
+        </StackPanel>
+        <StackPanel MinWidth="24" Spacing="3" HorizontalAlignment="Center">
+            <Ellipse x:Name="DotMod" Width="10" Height="10" HorizontalAlignment="Center" />
+            <TextBlock Text="MOD" FontSize="8" HorizontalAlignment="Center"
+                       Foreground="#4A5260" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

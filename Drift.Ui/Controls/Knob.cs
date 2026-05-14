@@ -101,10 +101,20 @@ public sealed class Knob : Control
     private double _dragOriginValue;
     private string? _registeredParamId;
 
+    private readonly SolidColorBrush _accentBrush = new();
+    private readonly Pen _accentArcPen;
+    private readonly Pen _accentNotchPen;
+
+    private FormattedText? _captionFt;
+    private string? _captionBuiltFor;
+
+    private FormattedText? _valueFt;
+    private string _valueBuiltFor = "\uffff";
+
     static Knob()
     {
         AffectsRender<Knob>(ValueProperty, MinimumProperty, MaximumProperty, CaptionProperty, UnitsProperty,
-            AccentProperty, BipolarProperty);
+            DecimalsProperty, LogarithmicProperty, AccentProperty, BipolarProperty);
     }
 
     private static RadialGradientBrush CreateKnobBodyRadialBrush()
@@ -130,6 +140,8 @@ public sealed class Knob : Control
         Width = 64;
         Height = 86;
         Focusable = true;
+        _accentArcPen = new Pen(_accentBrush, 4) { LineCap = PenLineCap.Round };
+        _accentNotchPen = new Pen(_accentBrush, 2.4) { LineCap = PenLineCap.Round };
     }
 
     public double Value
@@ -337,6 +349,7 @@ public sealed class Knob : Control
 
         var accent = Accent as ISolidColorBrush ?? KnobDefaultAccentBrush;
         var accentColor = accent.Color;
+        _accentBrush.Color = accentColor;
 
         // outer rim
         ctx.DrawEllipse(KnobOuterFillBrush, KnobRimPen, new Point(cx, cy), rOuter, rOuter);
@@ -356,8 +369,7 @@ public sealed class Knob : Control
             var sweepA = (hi - lo) * SweepDeg;
             if (sweepA > 0.5)
             {
-                var arcPen = new ImmutablePen(new ImmutableSolidColorBrush(accentColor), 4, lineCap: PenLineCap.Round);
-                ctx.DrawGeometry(null, arcPen, BuildArc(new Point(cx, cy), rTrack, startA, sweepA));
+                ctx.DrawGeometry(null, _accentArcPen, BuildArc(new Point(cx, cy), rTrack, startA, sweepA));
             }
         }
         else
@@ -365,8 +377,7 @@ public sealed class Knob : Control
             var sweepA = normalisedValue * SweepDeg;
             if (sweepA > 0.5)
             {
-                var arcPen = new ImmutablePen(new ImmutableSolidColorBrush(accentColor), 4, lineCap: PenLineCap.Round);
-                ctx.DrawGeometry(null, arcPen, BuildArc(new Point(cx, cy), rTrack, StartAngleDeg, sweepA));
+                ctx.DrawGeometry(null, _accentArcPen, BuildArc(new Point(cx, cy), rTrack, StartAngleDeg, sweepA));
             }
         }
 
@@ -379,32 +390,42 @@ public sealed class Knob : Control
         var ny0 = cy + Math.Sin(angle) * (rBody * 0.35);
         var nx1 = cx + Math.Cos(angle) * (rBody - 1);
         var ny1 = cy + Math.Sin(angle) * (rBody - 1);
-        var notchPen = new ImmutablePen(new ImmutableSolidColorBrush(accentColor), 2.4, lineCap: PenLineCap.Round);
-        ctx.DrawLine(notchPen, new Point(nx0, ny0), new Point(nx1, ny1));
+        ctx.DrawLine(_accentNotchPen, new Point(nx0, ny0), new Point(nx1, ny1));
 
         // notch glow dot
-        ctx.DrawEllipse(new ImmutableSolidColorBrush(accentColor), null, new Point(nx1, ny1), 2.2, 2.2);
+        ctx.DrawEllipse(_accentBrush, null, new Point(nx1, ny1), 2.2, 2.2);
 
-        // caption (above, dim) -- vertically centred in the 16px header strip
-        var captionFt = new FormattedText(
-            (Caption ?? "").ToUpperInvariant(),
-            CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight,
-            CaptionTypeface,
-            9,
-            CaptionMutedBrush);
-        ctx.DrawText(captionFt, new Point((w - captionFt.Width) / 2, 1));
+        // caption (above, dim) — FormattedText rebuilt only when Caption changes
+        if (_captionFt is null || !string.Equals(_captionBuiltFor, Caption, StringComparison.Ordinal))
+        {
+            _captionBuiltFor = Caption;
+            var cap = (Caption ?? "").ToUpperInvariant();
+            _captionFt = new FormattedText(
+                cap,
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                CaptionTypeface,
+                9,
+                CaptionMutedBrush);
+        }
 
-        // value text below
+        ctx.DrawText(_captionFt, new Point((w - _captionFt.Width) / 2, 1));
+
+        // value text below — reuse FormattedText until formatted string changes; accent via _accentBrush
         var valueText = FormatValue();
-        var valueFt = new FormattedText(
-            valueText,
-            CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight,
-            ValueTypeface,
-            10,
-            new ImmutableSolidColorBrush(accentColor));
-        ctx.DrawText(valueFt, new Point((w - valueFt.Width) / 2, h - 14));
+        if (_valueFt is null || _valueBuiltFor != valueText)
+        {
+            _valueBuiltFor = valueText;
+            _valueFt = new FormattedText(
+                valueText,
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                ValueTypeface,
+                10,
+                _accentBrush);
+        }
+
+        ctx.DrawText(_valueFt, new Point((w - _valueFt.Width) / 2, h - 14));
     }
 
     private double NormaliseToUnit(double v)

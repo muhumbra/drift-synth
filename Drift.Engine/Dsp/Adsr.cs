@@ -38,6 +38,7 @@ public sealed class Adsr
     public void NoteOn()
     {
         CurrentStage = Stage.Attack;
+        Value = 0f;
         _target = 1f + AttackOvershoot;
         _coeff = ComputeCoeff(Attack);
     }

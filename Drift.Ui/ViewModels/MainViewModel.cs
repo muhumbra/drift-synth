@@ -13,8 +13,6 @@ namespace Drift.Ui.ViewModels;
 
 public sealed class MainViewModel : Observable
 {
-    private string _latencyText = "-- ms";
-
     private string _playLabel = "START AUDIO";
 
     private ArpPreset? _selectedArpPreset;
@@ -72,13 +70,6 @@ public sealed class MainViewModel : Observable
 
     private void OnPatchDirtyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Patch.Name updates always need to refresh the display string, even when
-        // we're suppressing the dirty flag (e.g. loading a saved patch).
-        if (ReferenceEquals(sender, Patch) && e.PropertyName == nameof(SynthPatch.Name))
-        {
-            Raise(nameof(PatchDisplayName));
-        }
-
         if (_suppressPatchDirty)
         {
             return;
@@ -92,19 +83,7 @@ public sealed class MainViewModel : Observable
         get => _isPatchModified;
         private set
         {
-            if (Set(ref _isPatchModified, value))
-            {
-                Raise(nameof(PatchDisplayName));
-            }
-        }
-    }
-
-    public string PatchDisplayName
-    {
-        get
-        {
-            var prefix = _isPatchModified ? "• " : "";
-            return $"now playing: {prefix}{Patch.Name}";
+            Set(ref _isPatchModified, value);
         }
     }
 
@@ -171,12 +150,6 @@ public sealed class MainViewModel : Observable
     {
         get => _statusText;
         set => Set(ref _statusText, value);
-    }
-
-    public string LatencyText
-    {
-        get => _latencyText;
-        set => Set(ref _latencyText, value);
     }
 
     public string PlayLabel
@@ -258,7 +231,7 @@ public sealed class MainViewModel : Observable
         {
             Engine.Start();
             PlayLabel = "STOP AUDIO";
-            StatusText = $"Playing on {Engine.CurrentDriverName}.";
+            StatusText = "Audio running.";
         }
     }
 
@@ -336,7 +309,7 @@ public sealed class MainViewModel : Observable
         {
             Engine.Start();
             PlayLabel = "STOP AUDIO";
-            StatusText = $"Playing on {Engine.CurrentDriverName}.";
+            StatusText = "Audio running.";
         }
     }
 
@@ -438,7 +411,6 @@ public sealed class MainViewModel : Observable
         if (string.IsNullOrEmpty(_selectedDriver) || _selectedDriver.StartsWith("(no"))
         {
             Engine.CloseDriver();
-            LatencyText = "-- ms";
             PlayLabel = "START AUDIO";
             StatusText = "No driver. Pick one above.";
             Raise(nameof(Levels));
@@ -449,8 +421,7 @@ public sealed class MainViewModel : Observable
         try
         {
             Engine.OpenDriver(_selectedDriver);
-            LatencyText = $"{Engine.CurrentLatencyMs} ms @ {Engine.SampleRate / 1000.0:0.#}k";
-            StatusText = $"Opened {Engine.CurrentDriverName}.";
+            StatusText = "Driver opened.";
             PlayLabel = Engine.IsPlaying ? "STOP AUDIO" : "START AUDIO";
             Raise(nameof(Levels));
             ScheduleSettingsSave();
@@ -458,7 +429,6 @@ public sealed class MainViewModel : Observable
         catch (Exception ex)
         {
             StatusText = $"Driver failed: {ex.Message}";
-            LatencyText = "-- ms";
             ScheduleSettingsSave();
         }
     }
